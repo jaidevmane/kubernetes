@@ -180,11 +180,12 @@ func (r *leaseEndpointReconciler) ReconcileEndpoints(serviceName string, ip net.
 	if err := r.masterLeases.UpdateLease(ip.String()); err != nil {
 		return err
 	}
+	shutdown := false
 
-	return r.doReconcile(serviceName, endpointPorts, reconcilePorts)
+	return r.doReconcile(serviceName, endpointPorts, reconcilePorts, shutdown)
 }
 
-func (r *leaseEndpointReconciler) doReconcile(serviceName string, endpointPorts []corev1.EndpointPort, reconcilePorts bool) error {
+func (r *leaseEndpointReconciler) doReconcile(serviceName string, endpointPorts []corev1.EndpointPort, reconcilePorts bool, shutdown bool) error {
 	e, err := r.epAdapter.Get(corev1.NamespaceDefault, serviceName, metav1.GetOptions{})
 	shouldCreate := false
 	if err != nil {
@@ -210,7 +211,7 @@ func (r *leaseEndpointReconciler) doReconcile(serviceName string, endpointPorts 
 	// Since we just refreshed our own key, assume that zero endpoints
 	// returned from storage indicates an issue or invalid state, and thus do
 	// not update the endpoints list based on the result.
-	if len(masterIPs) == 0 {
+	if len(masterIPs) == 0 && !shutdown {
 		return fmt.Errorf("no master IPs were listed in storage, refusing to erase all endpoints for the kubernetes service")
 	}
 
@@ -316,8 +317,9 @@ func (r *leaseEndpointReconciler) RemoveEndpoints(serviceName string, ip net.IP,
 	if err := r.masterLeases.RemoveLease(ip.String()); err != nil {
 		return err
 	}
+	shutdown := true
 
-	return r.doReconcile(serviceName, endpointPorts, true)
+	return r.doReconcile(serviceName, endpointPorts,true, shutdown)
 }
 
 func (r *leaseEndpointReconciler) StopReconciling() {
