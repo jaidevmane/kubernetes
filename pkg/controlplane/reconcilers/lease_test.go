@@ -337,6 +337,15 @@ func TestLeaseEndpointReconciler(t *testing.T) {
 			),
 			expectLeases: []string{"1.2.3.4"},
 		},
+		{
+			testName:      "1 existing endpoint, should not remove it, since shutdown is false",
+			serviceName:   "foo",
+			ip:            "1.2.3.4",
+			endpointPorts: []corev1.EndpointPort{{Name: "foo", Port: 8080, Protocol: "TCP"}},
+			initialState: makeEndpointsArray("foo", []string{"1.2.3.4"}, []corev1.EndpointPort{{Name: "foo", Port: 8080, Protocol: "TCP"}}),
+			expectUpdate: makeEndpointsArray("foo", []string{"1.2.3.4"}, []corev1.EndpointPort{{Name: "foo", Port: 8080, Protocol: "TCP"}}),
+			expectLeases:  []string{"1.2.3.4"},
+		},
 	}
 	for _, test := range reconcileTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -414,6 +423,15 @@ func TestLeaseEndpointReconciler(t *testing.T) {
 			endpointPorts: []corev1.EndpointPort{{Name: "foo", Port: 8080, Protocol: "TCP"}},
 			initialState:  nil,
 			expectCreate:  makeEndpointsArray("foo", []string{"1.2.3.4"}, []corev1.EndpointPort{{Name: "foo", Port: 8080, Protocol: "TCP"}}),
+			expectLeases:  []string{"1.2.3.4"},
+		},
+		{
+			testName:      "1 existing endpoint, should remove it, since shutdown is true",
+			serviceName:   "foo",
+			ip:            "1.2.3.4",
+			endpointPorts: []corev1.EndpointPort{{Name: "foo", Port: 8080, Protocol: "TCP"}},
+			initialState: makeEndpointsArray("foo", []string{"1.2.3.4"}, []corev1.EndpointPort{{Name: "foo", Port: 8080, Protocol: "TCP"}}),
+			expectUpdate: nil,
 			expectLeases:  []string{"1.2.3.4"},
 		},
 	}
